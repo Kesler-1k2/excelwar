@@ -22,7 +22,7 @@ with cols[0].container(border=True,height=400):
         
         """
     )
-    st.page_link("pages/1_Lessons.py", label="Open")
+    st.page_link("1_Lessons.py", label="Open")
 
 with cols[1].container(border=True,height=400):
     st.markdown(
@@ -32,7 +32,7 @@ with cols[1].container(border=True,height=400):
         and performance over time.
         """
     )
-    st.page_link("pages/2_Progress.py", label="Open", use_container_width=True)
+    st.page_link("/2_Progress.py", label="Open", use_container_width=True)
 
 with cols[2].container(border=True,height=400):
     st.markdown(
@@ -42,6 +42,6 @@ with cols[2].container(border=True,height=400):
         settings, and preferences.
         """
     )
-    st.page_link("pages/3_Account.py", label="Open", use_container_width=True)
+    st.page_link("3_Account.py", label="Open", use_container_width=True)
 
 st.caption("2026 ExcelWars Ltd®")
