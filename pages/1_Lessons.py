@@ -1,4 +1,5 @@
 import streamlit as st
+st.title("Lessons")
 
 # initialize
 if "lesson_page" not in st.session_state:
