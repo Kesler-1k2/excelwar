@@ -5,9 +5,6 @@ st.set_page_config(page_title="ExcelWars", layout="wide")
 st.title("ExcelWars")
 st.subheader("The perfect place to excel, in Excel!")
 
-import streamlit as st
-
-st.set_page_config(page_title="ExcelWars", layout="wide")
 
 st.title("🏠 ExcelWars")
 

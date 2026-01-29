@@ -10,7 +10,6 @@ def go_to_cell_formatting():
     st.session_state.lesson_page = "cell_formatting"
 def go_to_formulas_functions():
     st.session_state.lesson_page = "formulas_functions"
-
 # layout
 cols = st.columns(4, gap="large")
 
