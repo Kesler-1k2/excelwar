@@ -17,6 +17,12 @@ if st.session_state.lesson_page == "main":
         Learn Excel basics, key terms, and functions
         """)
         st.button("Let's Go! ➡", on_click=go_to_basics)
+    with cols[1].container(border=True):
+        st.markdown("""
+        ### Lesson 1: Cell Formatting
+        Learn how to format cells for better data presentation
+        """)
+        st.button("Let's Go! ➡", on_click=go_to_basics)
 
 elif st.session_state.lesson_page == "basics":
     st.title("Lesson 1: Basics of Excel")
