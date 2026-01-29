@@ -19,8 +19,14 @@ if st.session_state.lesson_page == "main":
         st.button("Let's Go! ➡", on_click=go_to_basics)
     with cols[1].container(border=True):
         st.markdown("""
-        ### Lesson 1: Cell Formatting
+        ### Lesson 2: Cell Formatting
         Learn how to format cells for better data presentation
+        """)
+        st.button("Let's Go! ➡", on_click=go_to_basics)
+    with cols[2].container(border=True):
+        st.markdown("""
+        ### Lesson 3: Formulas & Functions
+        Learn how to use formulas and functions effectively
         """)
         st.button("Let's Go! ➡", on_click=go_to_basics)
 
