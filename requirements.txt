@@ -1,1 +1,8 @@
 streamlit
+pandas
+openpyxl
+os
+json
+PIL
+google-generativeai
+python-dotenv
