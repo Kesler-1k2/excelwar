@@ -447,3 +447,369 @@ if mode == "Teacher":
 
 st.markdown("---")
 st.caption(f"Excel Learning Studio Pro v{APP_VERSION}")
+import streamlit as st
+import pandas as pd
+import numpy as np
+from datetime import datetime
+
+# ------------------------------------------------
+# PAGE CONFIG
+# ------------------------------------------------
+st.set_page_config(page_title="Excel Learning Studio", page_icon="📊", layout="wide")
+
+APP_VERSION = "3.0"
+XP_PER_LESSON = 50
+
+# ------------------------------------------------
+# SESSION INIT
+# ------------------------------------------------
+def init_session():
+    defaults = {
+        "xp": 0,
+        "level": 1,
+        "completed": {"Lesson 1": False, "Lesson 2": False, "Lesson 3": False},
+        "log": []
+    }
+
+    for k, v in defaults.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
+
+init_session()
+
+# ------------------------------------------------
+# LOGGING
+# ------------------------------------------------
+def log(msg):
+    st.session_state.log.append({
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "event": msg
+    })
+
+# ------------------------------------------------
+# LEVEL SYSTEM
+# ------------------------------------------------
+def update_level():
+    st.session_state.level = 1 + st.session_state.xp // 150
+
+# ------------------------------------------------
+# AI FUNCTION DATABASE (EXPANDED)
+# ------------------------------------------------
+AI_FUNCTIONS = {
+
+    "SUM": {
+        "desc": "Adds numbers together from selected cells.",
+        "syntax": "=SUM(A1:A5)",
+        "example": "Adds values from A1 to A5 to get total marks."
+    },
+
+    "AVERAGE": {
+        "desc": "Finds the average value of numbers.",
+        "syntax": "=AVERAGE(A1:A5)",
+        "example": "Used to calculate average student score."
+    },
+
+    "MIN": {
+        "desc": "Returns the smallest number in a dataset.",
+        "syntax": "=MIN(A1:A5)",
+        "example": "Finds lowest test score."
+    },
+
+    "MAX": {
+        "desc": "Returns the largest number in a dataset.",
+        "syntax": "=MAX(A1:A5)",
+        "example": "Finds highest test score."
+    },
+
+    "COUNT": {
+        "desc": "Counts number of numeric cells.",
+        "syntax": "=COUNT(A1:A5)",
+        "example": "Counts how many students have marks."
+    },
+
+    "IF": {
+        "desc": "Performs logical testing.",
+        "syntax": '=IF(A1>50,"Pass","Fail")',
+        "example": "Checks whether student passed."
+    }
+}
+
+# ------------------------------------------------
+# SIDEBAR AI TUTOR
+# ------------------------------------------------
+st.sidebar.title("🤖 Excel AI Tutor")
+
+func = st.sidebar.selectbox("Choose Function", list(AI_FUNCTIONS.keys()))
+
+st.sidebar.write("### Description")
+st.sidebar.info(AI_FUNCTIONS[func]["desc"])
+
+st.sidebar.write("### Syntax")
+st.sidebar.code(AI_FUNCTIONS[func]["syntax"])
+
+st.sidebar.write("### Example")
+st.sidebar.success(AI_FUNCTIONS[func]["example"])
+
+# ------------------------------------------------
+# MINICEXCEL BUILDER
+# ------------------------------------------------
+def mini_excel(key):
+
+    rows = st.slider("Rows", 3, 15, 5, key=f"{key}_rows")
+    cols = st.slider("Columns", 3, 8, 5, key=f"{key}_cols")
+
+    df = pd.DataFrame(
+        np.random.randint(1, 100, (rows, cols)),
+        columns=[f"Col {i+1}" for i in range(cols)]
+    )
+
+    edited = st.data_editor(df, key=f"{key}_editor")
+    return edited
+
+# ------------------------------------------------
+# SAFE FORMULA SIMULATION
+# ------------------------------------------------
+def simulate_formula(formula, values):
+
+    try:
+        arr = np.array(values).astype(float)
+
+        if arr.size == 0:
+            return "No data available"
+
+        if formula == "SUM":
+            return arr.sum()
+
+        if formula == "AVERAGE":
+            return arr.mean()
+
+        if formula == "MIN":
+            return arr.min()
+
+        if formula == "MAX":
+            return arr.max()
+
+        if formula == "COUNT":
+            return len(arr)
+
+        return "Unsupported"
+
+    except:
+        return "Invalid data"
+
+# ------------------------------------------------
+# QUIZ ENGINE
+# ------------------------------------------------
+def quiz(q, options, answer, key):
+
+    user = st.radio(q, options, key=f"{key}_radio")
+
+    if st.button("Submit Quiz", key=f"{key}_btn"):
+
+        if user == answer:
+            st.success("Correct!")
+            st.session_state.xp += 20
+            update_level()
+        else:
+            st.error("Incorrect")
+
+# ------------------------------------------------
+# LESSON COMPLETION
+# ------------------------------------------------
+def complete_lesson(name, key):
+
+    if st.button("Complete Lesson", key=key):
+
+        if not st.session_state.completed[name]:
+            st.session_state.completed[name] = True
+            st.session_state.xp += XP_PER_LESSON
+            update_level()
+            st.success("Lesson Completed!")
+
+# ------------------------------------------------
+# MAIN UI
+# ------------------------------------------------
+st.title("📊 Excel Learning Studio")
+
+st.write(f"XP: {st.session_state.xp} | Level: {st.session_state.level}")
+
+tabs = st.tabs(["Lesson 1", "Lesson 2", "Lesson 3", "Teacher Dashboard"])
+
+# =================================================
+# LESSON 1 (VERY DETAILED)
+# =================================================
+with tabs[0]:
+
+    st.header("Lesson 1 — Excel Basics & Mathematical Functions")
+
+    with st.expander("📘 Teaching Section", True):
+
+        st.markdown("""
+### What is Excel?
+
+Excel is a spreadsheet software used to organise, calculate, and analyse data.
+
+### Understanding Structure
+- Rows run horizontally
+- Columns run vertically
+- Cells store information
+
+### Function: SUM
+SUM adds values together.
+
+Used when:
+- Calculating totals
+- Adding expenses
+- Finding total scores
+
+### Function: AVERAGE
+Calculates mean value.
+
+Used when:
+- Finding average grades
+- Analysing performance
+
+### Function: MIN
+Finds smallest value.
+
+### Function: MAX
+Finds largest value
+""")
+
+    st.subheader("🧪 Guided Practice")
+
+    df = mini_excel("l1")
+
+    formula = st.selectbox("Choose Function", ["SUM", "AVERAGE", "MIN", "MAX"], key="l1_formula")
+
+    result = simulate_formula(formula, df.values.flatten())
+
+    st.write("Result:", result)
+
+    quiz(
+        "Which function finds average?",
+        ["SUM", "AVERAGE", "MIN"],
+        "AVERAGE",
+        "l1_quiz"
+    )
+
+    complete_lesson("Lesson 1", "l1_complete")
+
+# =================================================
+# LESSON 2 (VERY DETAILED)
+# =================================================
+with tabs[1]:
+
+    st.header("Lesson 2 — Sorting, Filtering & Data Organisation")
+
+    with st.expander("📘 Teaching Section", True):
+
+        st.markdown("""
+### Sorting
+Sorting arranges information in order.
+
+Examples:
+- Alphabetical sorting
+- Sorting marks from highest to lowest
+
+### Filtering
+Filtering shows only selected data.
+
+Example:
+- Show only students who passed
+
+### Why Organisation Matters
+- Makes analysis easier
+- Helps find patterns
+- Helps decision making
+""")
+
+    df2 = mini_excel("l2")
+
+    if "Col 1" in df2.columns:
+        if st.checkbox("Sort Column 1", key="l2_sort"):
+            st.dataframe(df2.sort_values("Col 1"))
+
+    quiz(
+        "Filtering does what?",
+        ["Deletes data", "Shows selected data", "Changes numbers"],
+        "Shows selected data",
+        "l2_quiz"
+    )
+
+    complete_lesson("Lesson 2", "l2_complete")
+
+# =================================================
+# LESSON 3 (VERY DETAILED)
+# =================================================
+with tabs[2]:
+
+    st.header("Lesson 3 — Charts & Visual Data Analysis")
+
+    with st.expander("📘 Teaching Section", True):
+
+        st.markdown("""
+### Why Charts Are Important
+Charts help people understand data visually.
+
+### Bar Chart
+Used for comparing categories.
+
+### Line Chart
+Used for trends over time.
+
+### Pie Chart
+Used for showing proportions.
+
+### Good Chart Practices
+- Always label axes
+- Use correct chart type
+- Keep charts simple
+""")
+
+    df3 = mini_excel("l3")
+
+    numeric_df = df3.select_dtypes(include=np.number)
+
+    if not numeric_df.empty:
+        chart = st.selectbox("Chart Type", ["Bar", "Line", "Area"], key="l3_chart")
+
+        if chart == "Bar":
+            st.bar_chart(numeric_df)
+        elif chart == "Line":
+            st.line_chart(numeric_df)
+        else:
+            st.area_chart(numeric_df)
+    else:
+        st.warning("No numeric data")
+
+    quiz(
+        "Which chart shows trends?",
+        ["Line", "Pie", "Bar"],
+        "Line",
+        "l3_quiz"
+    )
+
+    complete_lesson("Lesson 3", "l3_complete")
+
+# =================================================
+# TEACHER DASHBOARD
+# =================================================
+with tabs[3]:
+
+    st.header("Teacher Dashboard")
+
+    st.write("Lesson Completion:")
+    st.write(st.session_state.completed)
+
+    st.subheader("Activity Log")
+    if st.session_state.log:
+        st.dataframe(pd.DataFrame(st.session_state.log))
+    else:
+        st.info("No activity yet")
+
+# ------------------------------------------------
+# FOOTER
+# ------------------------------------------------
+st.markdown("---")
+st.caption(f"Version {APP_VERSION}")
