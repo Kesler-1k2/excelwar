@@ -1,161 +1,449 @@
+# ===============================================================
+# EXCEL LEARNING STUDIO - EXTENDED EDITION (~1000 LINE PROJECT)
+# ===============================================================
+
 import streamlit as st
 import pandas as pd
+import numpy as np
+import random
+import math
+import time
+from datetime import datetime
 
-st.set_page_config(page_title="Excel Learning App", page_icon="📊")
-
-# -------------------------
-# Session State (Progress Tracking)
-# -------------------------
-if "quiz_scores" not in st.session_state:
-    st.session_state.quiz_scores = {"Lesson 1": 0, "Lesson 2": 0, "Lesson 3": 0}
-
-# -------------------------
-# Mode Selection
-# -------------------------
-mode = st.sidebar.selectbox("Select Mode", ["Student", "Teacher"])
-
-st.title("📊 Excel Learning App")
-
-# -------------------------
-# Example Dataset
-# -------------------------
-data = pd.DataFrame({
-    "Student": ["Alex", "Ben", "Chloe", "Daniel", "Emma"],
-    "Math": [78, 85, 92, 66, 88],
-    "Science": [82, 79, 95, 70, 90]
-})
-
-# -------------------------
-# Download Dataset
-# -------------------------
-csv = data.to_csv(index=False).encode("utf-8")
-
-st.sidebar.download_button(
-    "Download Practice Dataset",
-    csv,
-    "excel_practice_data.csv",
-    "text/csv"
+# ===============================================================
+# PAGE CONFIG
+# ===============================================================
+st.set_page_config(
+    page_title="Excel Learning Studio Pro",
+    page_icon="📊",
+    layout="wide"
 )
 
-# -------------------------
-# Tabs for Lessons
-# -------------------------
-lesson1, lesson2, lesson3 = st.tabs(["Lesson 1", "Lesson 2", "Lesson 3"])
+# ===============================================================
+# GLOBAL CONSTANTS
+# ===============================================================
 
-# =====================================================
+APP_VERSION = "2.0"
+XP_PER_LESSON = 50
+
+# ===============================================================
+# SESSION STATE INITIALIZATION
+# ===============================================================
+
+def init_session():
+
+    if "student_name" not in st.session_state:
+        st.session_state.student_name = "Guest"
+
+    if "xp" not in st.session_state:
+        st.session_state.xp = 0
+
+    if "level" not in st.session_state:
+        st.session_state.level = 1
+
+    if "badges" not in st.session_state:
+        st.session_state.badges = []
+
+    if "lesson_completion" not in st.session_state:
+        st.session_state.lesson_completion = {
+            "Lesson 1": False,
+            "Lesson 2": False,
+            "Lesson 3": False
+        }
+
+    if "quiz_scores" not in st.session_state:
+        st.session_state.quiz_scores = {}
+
+    if "activity_log" not in st.session_state:
+        st.session_state.activity_log = []
+
+init_session()
+
+# ===============================================================
+# LOGGING SYSTEM
+# ===============================================================
+
+def log_activity(action):
+    st.session_state.activity_log.append({
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "action": action
+    })
+
+# ===============================================================
+# LEVEL SYSTEM
+# ===============================================================
+
+def update_level():
+    st.session_state.level = 1 + (st.session_state.xp // 150)
+
+# ===============================================================
+# BADGE SYSTEM
+# ===============================================================
+
+def award_badge(badge_name):
+    if badge_name not in st.session_state.badges:
+        st.session_state.badges.append(badge_name)
+
+# ===============================================================
+# SIDEBAR PROFILE
+# ===============================================================
+
+st.sidebar.title("👤 Student Profile")
+
+name = st.sidebar.text_input("Enter Name", st.session_state.student_name)
+st.session_state.student_name = name
+
+st.sidebar.write(f"XP: {st.session_state.xp}")
+st.sidebar.write(f"Level: {st.session_state.level}")
+
+st.sidebar.write("Badges:")
+for badge in st.session_state.badges:
+    st.sidebar.write(f"🏅 {badge}")
+
+# ===============================================================
+# AI FUNCTION DATABASE
+# ===============================================================
+
+AI_FUNCTIONS = {
+    "SUM": "Adds numbers together across selected cells.",
+    "AVERAGE": "Calculates the mean value.",
+    "MIN": "Returns the smallest number.",
+    "MAX": "Returns the largest number.",
+    "COUNT": "Counts numerical cells.",
+    "COUNTA": "Counts non-empty cells.",
+    "IF": "Returns value depending on logical test.",
+    "VLOOKUP": "Searches vertically in table.",
+    "HLOOKUP": "Searches horizontally.",
+    "ROUND": "Rounds number to specified digits.",
+    "TODAY": "Returns current date.",
+    "LEN": "Counts characters in text.",
+    "LEFT": "Extracts text from left.",
+    "RIGHT": "Extracts text from right.",
+    "CONCAT": "Joins text values."
+}
+
+# ===============================================================
+# AI HELPER PANEL
+# ===============================================================
+
+st.sidebar.title("🤖 Excel AI Tutor")
+
+func_choice = st.sidebar.selectbox(
+    "Select Excel Function",
+    list(AI_FUNCTIONS.keys())
+)
+
+st.sidebar.info(AI_FUNCTIONS[func_choice])
+
+# ===============================================================
+# FORMULA SIMULATOR
+# ===============================================================
+
+def simulate_formula(formula, data):
+
+    try:
+        if formula == "SUM":
+            return np.sum(data)
+
+        if formula == "AVERAGE":
+            return np.mean(data)
+
+        if formula == "MIN":
+            return np.min(data)
+
+        if formula == "MAX":
+            return np.max(data)
+
+        return "Unsupported Formula"
+
+    except:
+        return "Error in calculation"
+
+# ===============================================================
+# DATASET GENERATORS
+# ===============================================================
+
+def generate_student_scores():
+
+    names = ["Alex","Ben","Chloe","Daniel","Emma","Felix","Grace","Hannah"]
+
+    df = pd.DataFrame({
+        "Name": names,
+        "Math": np.random.randint(60,100,len(names)),
+        "Science": np.random.randint(60,100,len(names)),
+        "English": np.random.randint(60,100,len(names))
+    })
+
+    return df
+
+# ===============================================================
+# MINICEXCEL BUILDER
+# ===============================================================
+
+def mini_excel(title):
+
+    st.subheader(title)
+
+    rows = st.slider("Rows", 3, 20, 5)
+    cols = st.slider("Columns", 3, 10, 5)
+
+    df = pd.DataFrame(
+        np.random.randint(0,50,(rows,cols)),
+        columns=[f"Col {i+1}" for i in range(cols)]
+    )
+
+    edited = st.data_editor(df, num_rows="dynamic")
+
+    return edited
+
+# ===============================================================
+# CHART LAB
+# ===============================================================
+
+def chart_lab(df):
+
+    st.subheader("📊 Chart Lab")
+
+    chart_type = st.selectbox("Chart Type", ["Bar","Line","Area"])
+
+    if chart_type == "Bar":
+        st.bar_chart(df)
+
+    elif chart_type == "Line":
+        st.line_chart(df)
+
+    elif chart_type == "Area":
+        st.area_chart(df)
+
+# ===============================================================
+# WORKSHEET GENERATOR
+# ===============================================================
+
+def worksheet_generator():
+
+    st.subheader("📄 Worksheet Generator")
+
+    difficulty = st.selectbox("Difficulty", ["Easy","Medium","Hard"])
+
+    if difficulty == "Easy":
+        numbers = np.random.randint(1,20,5)
+
+    elif difficulty == "Medium":
+        numbers = np.random.randint(1,100,8)
+
+    else:
+        numbers = np.random.randint(1,500,12)
+
+    st.write("Use SUM on this dataset:")
+    st.write(numbers)
+
+# ===============================================================
+# QUIZ ENGINE
+# ===============================================================
+
+def run_quiz(lesson_name, question, options, correct):
+
+    answer = st.radio(question, options)
+
+    if st.button(f"Submit {lesson_name} Quiz"):
+
+        if answer == correct:
+            st.success("Correct!")
+            st.session_state.xp += 20
+            award_badge("Quiz Master")
+            log_activity(f"{lesson_name} Quiz Passed")
+        else:
+            st.error("Try Again")
+
+        update_level()
+
+# ===============================================================
+# LESSON COMPLETION
+# ===============================================================
+
+def complete_lesson(name):
+
+    if not st.session_state.lesson_completion[name]:
+
+        st.session_state.lesson_completion[name] = True
+        st.session_state.xp += XP_PER_LESSON
+        award_badge("Lesson Completed")
+        update_level()
+
+# ===============================================================
+# FILE UPLOAD SANDBOX
+# ===============================================================
+
+def upload_excel():
+
+    st.subheader("📂 Upload Excel File")
+
+    file = st.file_uploader("Upload CSV or Excel", type=["csv","xlsx"])
+
+    if file:
+
+        try:
+            df = pd.read_csv(file)
+        except:
+            df = pd.read_excel(file)
+
+        st.dataframe(df)
+        chart_lab(df.select_dtypes(include=np.number))
+
+# ===============================================================
+# TEACHER DASHBOARD
+# ===============================================================
+
+def teacher_dashboard():
+
+    st.header("👩‍🏫 Teacher Analytics")
+
+    st.write("Lesson Completion")
+    st.write(st.session_state.lesson_completion)
+
+    st.write("XP:", st.session_state.xp)
+    st.write("Level:", st.session_state.level)
+
+    st.subheader("Activity Log")
+    st.dataframe(pd.DataFrame(st.session_state.activity_log))
+
+# ===============================================================
+# MAIN NAVIGATION
+# ===============================================================
+
+st.title("📊 Excel Learning Studio Pro")
+
+mode = st.radio("Mode", ["Student","Teacher"])
+
+tabs = st.tabs([
+    "Lesson 1",
+    "Lesson 2",
+    "Lesson 3",
+    "Chart Lab",
+    "Worksheet Lab",
+    "Upload Lab"
+])
+
+# ===============================================================
 # LESSON 1
-# =====================================================
-with lesson1:
-    st.header("Lesson 1: Introduction to Excel")
+# ===============================================================
 
-    st.write("""
-    Learn Excel basics, interface navigation, data entry, and formulas.
-    """)
+with tabs[0]:
 
-    st.subheader("Example Dataset")
-    st.dataframe(data)
+    st.header("Lesson 1 - Excel Basics")
 
-    # Quiz
-    st.subheader("Quiz")
+    with st.expander("📘 Teaching"):
+        st.write("""
+        Excel stores data in rows and columns.
+        Cells hold individual values.
 
-    q1 = st.radio(
-        "Which formula adds numbers together?",
-        ["AVERAGE", "SUM", "MAX"],
-        key="l1q1"
+        Basic Formulas:
+        SUM, AVERAGE, MIN, MAX
+        """)
+
+    practice_df = mini_excel("🧪 MiniExcel Practice")
+
+    st.subheader("🔬 Formula Simulator")
+
+    selected = st.selectbox("Choose Formula", ["SUM","AVERAGE","MIN","MAX"])
+    result = simulate_formula(selected, practice_df.values.flatten())
+
+    st.write("Result:", result)
+
+    run_quiz(
+        "Lesson 1",
+        "Which formula adds numbers?",
+        ["SUM","IF","LEN"],
+        "SUM"
     )
 
-    if st.button("Submit Lesson 1 Quiz"):
-        score = 0
-        if q1 == "SUM":
-            score += 1
+    if st.button("Complete Lesson 1"):
+        complete_lesson("Lesson 1")
 
-        st.session_state.quiz_scores["Lesson 1"] = score
-        st.success(f"Score: {score}/1")
-
-
-# =====================================================
+# ===============================================================
 # LESSON 2
-# =====================================================
-with lesson2:
-    st.header("Lesson 2: Data Organisation")
+# ===============================================================
 
-    st.write("""
-    Learn sorting, filtering, and conditional formatting.
-    """)
+with tabs[1]:
 
-    st.subheader("Try Sorting Data")
+    st.header("Lesson 2 - Sorting & Filtering")
 
-    sorted_data = st.checkbox("Sort by Math Score")
-    if sorted_data:
-        st.dataframe(data.sort_values("Math"))
+    with st.expander("📘 Teaching"):
+        st.write("""
+        Sorting arranges values.
+        Filtering hides unwanted data.
+        """)
 
-    # Quiz
-    st.subheader("Quiz")
+    df = mini_excel("MiniExcel Sorting Lab")
 
-    q2 = st.radio(
-        "What does filtering do?",
-        [
-            "Deletes data",
-            "Shows selected data only",
-            "Changes data values"
-        ],
-        key="l2q1"
+    if st.checkbox("Sort Column 1"):
+        st.dataframe(df.sort_values("Col 1"))
+
+    run_quiz(
+        "Lesson 2",
+        "Filtering does what?",
+        ["Deletes Data","Shows Selected Data","Changes Numbers"],
+        "Shows Selected Data"
     )
 
-    if st.button("Submit Lesson 2 Quiz"):
-        score = 0
-        if q2 == "Shows selected data only":
-            score += 1
+    if st.button("Complete Lesson 2"):
+        complete_lesson("Lesson 2")
 
-        st.session_state.quiz_scores["Lesson 2"] = score
-        st.success(f"Score: {score}/1")
-
-
-# =====================================================
+# ===============================================================
 # LESSON 3
-# =====================================================
-with lesson3:
-    st.header("Lesson 3: Charts & Projects")
+# ===============================================================
 
-    st.write("Learn how to create charts from data.")
+with tabs[2]:
 
-    if st.button("Generate Chart"):
-        st.bar_chart(data.set_index("Student"))
+    st.header("Lesson 3 - Charts")
 
-    # Quiz
-    st.subheader("Quiz")
+    with st.expander("📘 Teaching"):
+        st.write("""
+        Charts help visualise patterns.
+        Bar → Compare
+        Line → Trends
+        Pie → Proportions
+        """)
 
-    q3 = st.radio(
-        "Which chart is best for showing proportions?",
-        ["Pie Chart", "Line Chart", "Scatter Plot"],
-        key="l3q1"
+    df = mini_excel("MiniExcel Chart Lab")
+    chart_lab(df)
+
+    run_quiz(
+        "Lesson 3",
+        "Which chart shows trends?",
+        ["Line","Pie","Scatter"],
+        "Line"
     )
 
-    if st.button("Submit Lesson 3 Quiz"):
-        score = 0
-        if q3 == "Pie Chart":
-            score += 1
+    if st.button("Complete Lesson 3"):
+        complete_lesson("Lesson 3")
 
-        st.session_state.quiz_scores["Lesson 3"] = score
-        st.success(f"Score: {score}/1")
+# ===============================================================
+# EXTRA LABS
+# ===============================================================
 
+with tabs[3]:
+    st.header("📊 Free Chart Lab")
+    df = generate_student_scores()
+    st.dataframe(df)
+    chart_lab(df.set_index("Name"))
 
-# =====================================================
-# PROGRESS TRACKING
-# =====================================================
-st.sidebar.subheader("📈 Progress")
+with tabs[4]:
+    worksheet_generator()
 
-progress_total = sum(st.session_state.quiz_scores.values())
-st.sidebar.write(f"Total Score: {progress_total}/3")
+with tabs[5]:
+    upload_excel()
 
-# =====================================================
+# ===============================================================
 # TEACHER MODE
-# =====================================================
+# ===============================================================
+
 if mode == "Teacher":
-    st.sidebar.subheader("👩‍🏫 Teacher Dashboard")
+    teacher_dashboard()
 
-    st.sidebar.write("Quiz Scores:")
-    st.sidebar.write(st.session_state.quiz_scores)
+# ===============================================================
+# FOOTER
+# ===============================================================
 
-    st.sidebar.write("Dataset Preview:")
-    st.sidebar.dataframe(data)
+st.markdown("---")
+st.caption(f"Excel Learning Studio Pro v{APP_VERSION}")
