@@ -1,6 +1,6 @@
 streamlit
 pandas
 openpyxl
-os
-json
-PIL
+Pillow
+google-generativeai
+python-dotenv

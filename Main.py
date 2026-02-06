@@ -12,7 +12,7 @@ else:
 st.set_page_config(page_title="ExcelWars", layout="wide")
 
 st.title("ExcelWars")
-st.title(f"Welcome back, {profile_data.get('name', 'User')}!")
+st.subheader(f"Welcome back, {profile_data.get('name', 'User')}!")
 
 st.subheader("The perfect place to excel, in Excel!")
 
