@@ -1,6 +1,7 @@
-streamlit
-pandas
-openpyxl
-Pillow
 google-generativeai
+numpy
+openpyxl
+pandas
+Pillow
 python-dotenv
+streamlit

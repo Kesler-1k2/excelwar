@@ -1,42 +1,76 @@
 import streamlit as st
-st.title("Lessons")
 
-# initialize
+LESSONS = {
+    "basics": {
+        "title": "Lesson 1: Basics of Excel",
+        "summary": "Understand cells, rows, columns, and core spreadsheet workflows.",
+        "topics": ["Workbook layout", "Entering data", "Basic navigation"],
+    },
+    "cell_formatting": {
+        "title": "Lesson 2: Cell Formatting",
+        "summary": "Format data clearly so it is easier to read and present.",
+        "topics": ["Number formats", "Alignment", "Fonts and colors"],
+    },
+    "formulas_functions": {
+        "title": "Lesson 3: Formulas and Functions",
+        "summary": "Use formulas to calculate and analyze worksheet values.",
+        "topics": ["SUM and AVERAGE", "Relative vs absolute references", "Common function patterns"],
+    },
+}
+
+
 if "lesson_page" not in st.session_state:
     st.session_state.lesson_page = "main"
 
-def go_to_basics():
-    st.session_state.lesson_page = "basics"
-def go_to_cell_formatting():
-    st.session_state.lesson_page = "cell_formatting"
-def go_to_formulas_functions():
-    st.session_state.lesson_page = "formulas_functions"
-# layout
-cols = st.columns(4, gap="large")
+
+def open_lesson(lesson_key: str) -> None:
+    st.session_state.lesson_page = lesson_key
+
+
+def back_to_lessons() -> None:
+    st.session_state.lesson_page = "main"
+
+
+st.title("Lessons")
 
 if st.session_state.lesson_page == "main":
-    with cols[0].container(border=True,height=350):
-        st.markdown("""
-        ### Lesson 1: Basics
-        Learn Excel basics, key terms, and functions
-        """)
-        st.button("Let's Go! ➡", key="lesson1", on_click=go_to_basics)
-    with cols[1].container(border=True,height=350):
-        st.markdown("""
-        ### Lesson 2: Cell Formatting
-        Learn how to format cells for better data presentation
-        """)
-        st.button("Let's Go! ➡", key="lesson2", on_click=go_to_cell_formatting)
-    with cols[2].container(border=True,height=350):
-        st.markdown("""
-        ### Lesson 3: Formulas & Functions
-        Learn how to use formulas and functions effectively
-        """)
-        st.button("Let's Go! ➡", key="lesson3", on_click=go_to_formulas_functions)
-   
+    lesson_columns = st.columns(3, gap="large")
 
-elif st.session_state.lesson_page == "basics":
-    st.title("Lesson 1: Basics of Excel")
-    st.write("Welcome to Lesson 1!")
-    if st.button("Back to Lessons"):
-        st.session_state.lesson_page = "main"
+    with lesson_columns[0].container(border=True, height=260):
+        st.markdown("### Lesson 1: Basics")
+        st.write("Learn Excel basics, key terms, and core workflow.")
+        st.button("Open Lesson", key="lesson_basics", on_click=open_lesson, args=("basics",))
+
+    with lesson_columns[1].container(border=True, height=260):
+        st.markdown("### Lesson 2: Cell Formatting")
+        st.write("Format cells for clear, professional data presentation.")
+        st.button(
+            "Open Lesson",
+            key="lesson_cell_formatting",
+            on_click=open_lesson,
+            args=("cell_formatting",),
+        )
+
+    with lesson_columns[2].container(border=True, height=260):
+        st.markdown("### Lesson 3: Formulas and Functions")
+        st.write("Write formulas and use common Excel functions.")
+        st.button(
+            "Open Lesson",
+            key="lesson_formulas",
+            on_click=open_lesson,
+            args=("formulas_functions",),
+        )
+else:
+    lesson_key = st.session_state.lesson_page
+    lesson_data = LESSONS.get(lesson_key)
+
+    if lesson_data is None:
+        st.error("This lesson page could not be found.")
+    else:
+        st.header(lesson_data["title"])
+        st.write(lesson_data["summary"])
+        st.write("Key topics:")
+        for topic in lesson_data["topics"]:
+            st.write(f"- {topic}")
+
+    st.button("Back to Lessons", on_click=back_to_lessons)

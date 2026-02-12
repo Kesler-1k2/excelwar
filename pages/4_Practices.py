@@ -1,14 +1,16 @@
-import streamlit as st
 import pandas as pd
-from openpyxl import Workbook
+import streamlit as st
 
-# wb = Workbook()
-# ws = wb.active
-# ws.title = "Practice"
-# wb.save("Testing.xlsx")
+st.title("Practices")
+st.write("Use this page to practice editing spreadsheet data.")
 
-# df = pd.read_excel("Testing.xlsx")
-# st.dataframe(df)
+practice_df = pd.DataFrame(
+    {
+        "Task": ["Enter data", "Use SUM", "Create chart"],
+        "Status": ["Not started", "Not started", "Not started"],
+    }
+)
 
-
-# st.data_editor()
+edited_df = st.data_editor(practice_df, num_rows="dynamic", use_container_width=True)
+st.subheader("Your Practice Table")
+st.dataframe(edited_df, use_container_width=True)

@@ -1,60 +1,49 @@
-import streamlit as st
-import google.generativeai as genai
 import os
+
+import google.generativeai as genai
+import streamlit as st
 from dotenv import load_dotenv
 
-# -------------------------------
-# Load environment variables
-# -------------------------------
-load_dotenv(dotenv_path=".env")  # Make sure .env is in the same folder as app.py
+load_dotenv(dotenv_path=".env")
 
-api_key = os.getenv("GOOGLE_API_KEY")
-if not api_key:
-    st.error("⚠️ GOOGLE_API_KEY not found! Use a valid key or hardcode for testing.")
-else:
-    genai.configure(api_key=api_key)
+API_KEY = os.getenv("GOOGLE_API_KEY")
+MODEL_NAME = "gemini-2.5-flash"
 
-# -------------------------------
-# Streamlit UI
-# -------------------------------
-st.title("Gemini Chatbot with Cache")
+if API_KEY:
+    genai.configure(api_key=API_KEY)
 
-# Initialize chat history in session state
+st.title("Gemini Chatbot")
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Initialize cache to store responses
 if "cache" not in st.session_state:
-    st.session_state.cache = {}  # {user_input: bot_reply}
+    st.session_state.cache = {}
 
-# Display previous messages
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-# User input
 user_input = st.chat_input("Type your message...")
 
 if user_input:
-    # Show user message
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # Check cache first
     if user_input in st.session_state.cache:
         bot_reply = st.session_state.cache[user_input]
+    elif not API_KEY:
+        bot_reply = "GOOGLE_API_KEY is missing. Add it to your .env file to enable chat responses."
     else:
-        # Call Gemini API (rate-limited)
         try:
-            response = genai.GenerativeModel("gemini-2.5-flash").generate_content(user_input)
+            model = genai.GenerativeModel(MODEL_NAME)
+            response = model.generate_content(user_input)
             bot_reply = response.text
-            # Store in cache
             st.session_state.cache[user_input] = bot_reply
-        except Exception as e:
-            bot_reply = f"⚠️ API Error: {e}"
+        except Exception as error:  # noqa: BLE001
+            bot_reply = f"API error: {error}"
 
-    # Show bot reply
     st.session_state.messages.append({"role": "assistant", "content": bot_reply})
     with st.chat_message("assistant"):
         st.markdown(bot_reply)

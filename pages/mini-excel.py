@@ -1,171 +1,164 @@
-import streamlit as st
-import pandas as pd
-import os
 import re
+from pathlib import Path
 
-DATA_FILE = "data.csv"
+import pandas as pd
+import streamlit as st
+
+DATA_FILE = Path("data.csv")
+EXPORT_FILE = Path("export.xlsx")
+DEFAULT_COLUMNS = ["A", "B", "C"]
+
 
 st.set_page_config(page_title="Web Excel", layout="wide")
 st.title("Web Excel (with Formulas)")
 
-# =========================
-# Data Handling
-# =========================
-def load_data():
-    if os.path.exists(DATA_FILE):
+
+def load_data() -> pd.DataFrame:
+    if DATA_FILE.exists():
         return pd.read_csv(DATA_FILE)
-    else:
-        return pd.DataFrame({
-            "A": ["", "", ""],
-            "B": ["", "", ""],
-            "C": ["", "", ""]
-        })
 
-def save_data(df):
-    df.to_csv(DATA_FILE, index=False)
+    return pd.DataFrame({column: ["", "", ""] for column in DEFAULT_COLUMNS})
 
-# =========================
-# Spreadsheet Functions
-# (each function separate)
-# =========================
-def func_SUM(*args):
+
+def save_data(dataframe: pd.DataFrame) -> None:
+    dataframe.to_csv(DATA_FILE, index=False)
+
+
+def fn_sum(*args):
     return sum(args)
 
-def func_AVERAGE(*args):
+
+def fn_average(*args):
     return sum(args) / len(args) if args else 0
 
-def func_MIN(*args):
+
+def fn_min(*args):
     return min(args)
 
-def func_MAX(*args):
+
+def fn_max(*args):
     return max(args)
 
-def func_ROUND(value, digits=0):
+
+def fn_round(value, digits=0):
     return round(value, int(digits))
 
-def func_IF(condition, true_val, false_val):
-    return true_val if condition else false_val
 
-def func_AND(*args):
+def fn_if(condition, true_value, false_value):
+    return true_value if condition else false_value
+
+
+def fn_and(*args):
     return all(args)
 
-def func_OR(*args):
+
+def fn_or(*args):
     return any(args)
 
-def func_NOT(value):
+
+def fn_not(value):
     return not value
 
-def func_LEN(text):
+
+def fn_len(text):
     return len(str(text))
 
-def func_CONCAT(*args):
-    return "".join(str(a) for a in args)
 
-# Dictionary of functions
+def fn_concat(*args):
+    return "".join(str(arg) for arg in args)
+
+
 FUNCTIONS = {
-    "SUM": func_SUM,
-    "AVERAGE": func_AVERAGE,
-    "MIN": func_MIN,
-    "MAX": func_MAX,
-    "ROUND": func_ROUND,
-    "IF": func_IF,
-    "AND": func_AND,
-    "OR": func_OR,
-    "NOT": func_NOT,
-    "LEN": func_LEN,
-    "CONCAT": func_CONCAT,
+    "SUM": fn_sum,
+    "AVERAGE": fn_average,
+    "MIN": fn_min,
+    "MAX": fn_max,
+    "ROUND": fn_round,
+    "IF": fn_if,
+    "AND": fn_and,
+    "OR": fn_or,
+    "NOT": fn_not,
+    "LEN": fn_len,
+    "CONCAT": fn_concat,
 }
 
-# =========================
-# Formula Engine
-# =========================
-def replace_cell_references(formula, df):
-    def replace_cell(match):
-        col = match.group(1)
-        row = int(match.group(2)) - 1
+
+def replace_cell_references(formula: str, dataframe: pd.DataFrame) -> str:
+    def replace_match(match: re.Match[str]) -> str:
+        column_name = match.group(1)
+        row_index = int(match.group(2)) - 1
+
         try:
-            cell_value = df.loc[row, col]
-            num = float(cell_value)
-            if num.is_integer():
-                return str(int(num))
-            return str(num)
-        except:
+            cell_value = dataframe.loc[row_index, column_name]
+        except KeyError:
+            return "0"
+        except IndexError:
             return "0"
 
-    return re.sub(r"([A-Z])(\d+)", replace_cell, formula)
+        if pd.isna(cell_value) or cell_value == "":
+            return "0"
+
+        try:
+            number = float(cell_value)
+            return str(int(number) if number.is_integer() else number)
+        except (TypeError, ValueError):
+            return "0"
+
+    return re.sub(r"([A-Z])(\d+)", replace_match, formula)
 
 
 def format_result(value):
-    """Convert float like 8.0 into 8"""
     if isinstance(value, float) and value.is_integer():
         return int(value)
     return value
 
 
-def evaluate_formula(value, df):
-    if not isinstance(value, str):
+def evaluate_formula(value, dataframe: pd.DataFrame):
+    if not isinstance(value, str) or not value.startswith("="):
         return value
 
-    if not value.startswith("="):
-        return value
+    formula = replace_cell_references(value[1:], dataframe)
 
-    formula = value[1:]
-
-    # Replace cell references
-    formula = replace_cell_references(formula, df)
-
-    # Replace function names
-    for name in FUNCTIONS:
-        formula = re.sub(rf"\b{name}\b", f"FUNCTIONS['{name}']", formula)
+    for function_name in FUNCTIONS:
+        formula = re.sub(rf"\b{function_name}\b", f"FUNCTIONS['{function_name}']", formula)
 
     try:
-        result = eval(formula, {"FUNCTIONS": FUNCTIONS})
+        result = eval(formula, {"__builtins__": {}}, {"FUNCTIONS": FUNCTIONS})
         return format_result(result)
-    except:
+    except Exception:  # noqa: BLE001
         return "ERR"
 
 
-def calculate_dataframe(input_df):
-    result_df = input_df.copy()
+def calculate_dataframe(input_dataframe: pd.DataFrame) -> pd.DataFrame:
+    result_dataframe = input_dataframe.copy()
 
-    for col in result_df.columns:
-        for i in range(len(result_df)):
-            result_df.loc[i, col] = evaluate_formula(
-                input_df.loc[i, col],
-                input_df
+    for column in result_dataframe.columns:
+        for row_index in range(len(result_dataframe)):
+            result_dataframe.loc[row_index, column] = evaluate_formula(
+                input_dataframe.loc[row_index, column],
+                input_dataframe,
             )
-    return result_df
 
-# =========================
-# Streamlit UI
-# =========================
-df = load_data()
+    return result_dataframe
 
-edited_df = st.data_editor(
-    df,
+
+raw_dataframe = load_data()
+edited_dataframe = st.data_editor(
+    raw_dataframe,
     num_rows="dynamic",
     use_container_width=True,
-    key="editor"
+    key="mini_excel_editor",
 )
 
-result_df = calculate_dataframe(edited_df)
+calculated_dataframe = calculate_dataframe(edited_dataframe)
 
 st.subheader("Calculated Result")
-st.dataframe(result_df, use_container_width=True)
+st.dataframe(calculated_dataframe, use_container_width=True)
 
-# =========================
-# Save and Export
-# =========================
 if st.button("Save"):
-    save_data(edited_df)
-    st.success("Saved!")
+    save_data(edited_dataframe)
+    st.success("Saved.")
 
-excel_file = "export.xlsx"
-result_df.to_excel(excel_file, index=False)
-
-with open(excel_file, "rb") as f:
-    st.download_button(
-        "Download Excel",
-        f,
-        file_name="spreadsheet.xlsx"
-    )
+calculated_dataframe.to_excel(EXPORT_FILE, index=False)
+with EXPORT_FILE.open("rb") as excel_file:
+    st.download_button("Download Excel", excel_file, file_name="spreadsheet.xlsx")
