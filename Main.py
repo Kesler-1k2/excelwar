@@ -1,47 +1,74 @@
-import json
-from pathlib import Path
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Callable
 
 import streamlit as st
 
-PROFILE_DATA_FILE = Path("profile_data.json")
+from app_core import get_profile_name, init_app_state, navigate
+from app_pages import chatbot, home, lesson_plan, lessons, practice_lab, profile_progress, spreadsheet_lab
 
 
-def load_profile_data() -> dict:
-    """Load saved profile information, falling back to defaults."""
-    if not PROFILE_DATA_FILE.exists():
-        return {"name": "", "profile_pic": None}
-
-    try:
-        with PROFILE_DATA_FILE.open("r", encoding="utf-8") as file:
-            return json.load(file)
-    except (json.JSONDecodeError, OSError):
-        return {"name": "", "profile_pic": None}
+@dataclass(frozen=True)
+class PageConfig:
+    key: str
+    title: str
+    icon: str
+    render: Callable[[], None]
 
 
-st.set_page_config(page_title="ExcelWars", layout="wide")
+PRIMARY_PAGES = [
+    PageConfig("home", "Home", "🏠", home.render),
+    PageConfig("lessons", "Lessons", "📚", lessons.render),
+    PageConfig("spreadsheet", "Spreadsheet Lab", "🧮", spreadsheet_lab.render),
+    PageConfig("practice", "Practice Lab", "🧪", practice_lab.render),
+    PageConfig("lesson_plan", "Lesson Plan", "🗂", lesson_plan.render),
+    PageConfig("chatbot", "AI Tutor", "🤖", chatbot.render),
+]
 
-profile_data = load_profile_data()
-display_name = profile_data.get("name") or "User"
+PROFILE_PAGE = PageConfig("profile", "Profile & Progress", "👤", profile_progress.render)
 
-st.title("🏠 ExcelWars")
-st.subheader(f"Welcome back, {display_name}!")
-st.caption("The perfect place to excel, in Excel.")
+ALL_PAGES = {page.key: page for page in [*PRIMARY_PAGES, PROFILE_PAGE]}
 
-lesson_col, progress_col, account_col = st.columns(3, gap="large")
 
-with lesson_col.container(border=True, height=260):
-    st.markdown("### 📚 Lessons")
-    st.write("Find your lessons and quizzes.")
-    st.page_link("pages/1_Lessons.py", label="Open", use_container_width=True)
+st.set_page_config(page_title="ExcelWars", page_icon="📊", layout="wide")
+init_app_state()
 
-with progress_col.container(border=True, height=260):
-    st.markdown("### 📈 Progress")
-    st.write("Track your learning progress and performance.")
-    st.page_link("pages/2_Progress.py", label="Open", use_container_width=True)
+if "active_page" not in st.session_state:
+    st.session_state.active_page = "home"
 
-with account_col.container(border=True, height=260):
-    st.markdown("### 👤 Account")
-    st.write("Manage your profile, settings, and preferences.")
-    st.page_link("pages/3_Account.py", label="Open", use_container_width=True)
+if st.session_state.active_page not in ALL_PAGES:
+    st.session_state.active_page = "home"
 
-st.caption("2026 ExcelWars Ltd®")
+
+def render_sidebar(active_page: str) -> None:
+    st.sidebar.title("ExcelWars")
+    st.sidebar.caption(f"Signed in as: {get_profile_name()}")
+    st.sidebar.markdown("### Navigation")
+
+    for page in PRIMARY_PAGES:
+        button_type = "primary" if page.key == active_page else "secondary"
+        if st.sidebar.button(
+            f"{page.icon} {page.title}",
+            key=f"nav_{page.key}",
+            use_container_width=True,
+            type=button_type,
+        ):
+            navigate(page.key)
+
+    st.sidebar.markdown("---")
+    st.sidebar.caption("Quick Access")
+
+    profile_button_type = "primary" if PROFILE_PAGE.key == active_page else "secondary"
+    if st.sidebar.button(
+        f"{PROFILE_PAGE.icon} {PROFILE_PAGE.title}",
+        key="nav_profile_quick",
+        use_container_width=True,
+        type=profile_button_type,
+    ):
+        navigate(PROFILE_PAGE.key)
+
+
+active_page_key = st.session_state.active_page
+render_sidebar(active_page_key)
+ALL_PAGES[active_page_key].render()
