@@ -4,6 +4,7 @@ from app_core import get_profile_name, navigate
 
 
 def render() -> None:
+    # Landing page with quick actions for core modules.
     st.title("🏠 ExcelWars")
     st.subheader(f"Welcome back, {get_profile_name()}!")
     st.caption("The perfect place to excel, in Excel.")

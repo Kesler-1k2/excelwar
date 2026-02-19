@@ -15,6 +15,7 @@ from app_core import (
 
 
 def _render_profile_editor() -> None:
+    # Edit and persist student name/profile picture.
     st.subheader("Student Profile")
 
     profile_data = st.session_state.profile_data
@@ -47,6 +48,7 @@ def _render_profile_editor() -> None:
 
 
 def _render_progress_summary() -> None:
+    # Show XP/level metrics and lesson completion at a glance.
     st.subheader("Progress Summary")
 
     xp = st.session_state.xp
@@ -69,6 +71,7 @@ def _render_progress_summary() -> None:
 
 
 def _render_badges_and_log() -> None:
+    # Display earned badges and reverse-chronological activity history.
     badges = st.session_state.badges
     activity_log = st.session_state.activity_log
 
@@ -88,6 +91,7 @@ def _render_badges_and_log() -> None:
 
 
 def render() -> None:
+    # Combined account and progress page used by the sidebar quick-access link.
     st.title("👤 Profile & Progress")
     st.caption(f"Student: {get_profile_name()}")
 

@@ -44,6 +44,7 @@ LESSONS = {
 
 
 def _render_quiz(lesson_name: str, quiz: dict[str, object]) -> None:
+    # Render one lesson quiz and award XP only once per lesson.
     question = quiz["question"]
     options = quiz["options"]
     answer = quiz["answer"]
@@ -67,6 +68,7 @@ def _render_quiz(lesson_name: str, quiz: dict[str, object]) -> None:
 
 
 def _render_completion(lesson_name: str) -> None:
+    # Render lesson completion controls and first-time XP logic.
     if st.session_state.completed.get(lesson_name):
         st.success("Lesson completed.")
     else:
@@ -82,6 +84,7 @@ def _render_completion(lesson_name: str) -> None:
 
 
 def render() -> None:
+    # Main lessons page with one tab per lesson module.
     st.title("📚 Lessons")
     st.write("Work through each lesson and complete its quiz.")
 

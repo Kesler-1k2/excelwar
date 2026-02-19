@@ -8,6 +8,7 @@ MODEL_NAME = "gemini-2.5-flash"
 
 
 def _init_gemini() -> str | None:
+    # Load API key once per run and configure Gemini client.
     load_dotenv(dotenv_path=".env")
     api_key = os.getenv("GOOGLE_API_KEY")
 
@@ -18,6 +19,7 @@ def _init_gemini() -> str | None:
 
 
 def render() -> None:
+    # Chat page with in-session history plus a simple response cache.
     st.title("🤖 Gemini Chatbot")
 
     api_key = _init_gemini()

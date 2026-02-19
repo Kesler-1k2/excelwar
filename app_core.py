@@ -17,10 +17,12 @@ XP_PER_QUIZ = 20
 
 
 def _default_profile_data() -> dict[str, Any]:
+    # Base profile shape used when no saved file exists.
     return {"name": "", "profile_pic": None}
 
 
 def _default_learning_state() -> dict[str, Any]:
+    # Default values for all learning progress state keys.
     return {
         "student_name": "Guest",
         "xp": 0,
@@ -33,6 +35,7 @@ def _default_learning_state() -> dict[str, Any]:
 
 
 def load_profile_data() -> dict[str, Any]:
+    # Read profile JSON safely and return a normalized dict.
     if not PROFILE_DATA_FILE.exists():
         return _default_profile_data()
 
@@ -52,11 +55,13 @@ def load_profile_data() -> dict[str, Any]:
 
 
 def save_profile_data(profile_data: dict[str, Any]) -> None:
+    # Persist profile details for future sessions.
     with PROFILE_DATA_FILE.open("w", encoding="utf-8") as file:
         json.dump(profile_data, file, ensure_ascii=False, indent=2)
 
 
 def init_app_state() -> None:
+    # Initialize every session key exactly once per browser session.
     defaults = _default_learning_state()
 
     for key, value in defaults.items():
@@ -78,10 +83,12 @@ def init_app_state() -> None:
 
 
 def refresh_level() -> None:
+    # Recompute level from total XP using a fixed XP step.
     st.session_state.level = 1 + (st.session_state.xp // XP_PER_LEVEL)
 
 
 def log_activity(event: str) -> None:
+    # Append timestamped activity events for the profile history table.
     st.session_state.activity_log.append(
         {
             "time": datetime.now().strftime("%H:%M:%S"),
@@ -91,12 +98,14 @@ def log_activity(event: str) -> None:
 
 
 def add_xp(amount: int, reason: str) -> None:
+    # Centralized XP mutation to keep level and logs in sync.
     st.session_state.xp += amount
     refresh_level()
     log_activity(f"+{amount} XP ({reason})")
 
 
 def award_badge(badge_name: str) -> None:
+    # Award each badge once and log when unlocked.
     badges: list[str] = st.session_state.badges
     if badge_name not in badges:
         badges.append(badge_name)
@@ -104,6 +113,7 @@ def award_badge(badge_name: str) -> None:
 
 
 def mark_lesson_completed(lesson_name: str) -> bool:
+    # Mark completion and return True only the first time.
     completed = st.session_state.completed
     if completed.get(lesson_name):
         return False
@@ -113,6 +123,7 @@ def mark_lesson_completed(lesson_name: str) -> bool:
 
 
 def mark_quiz_completed(lesson_name: str) -> bool:
+    # Mark quiz completion and return True only the first time.
     quiz_completion = st.session_state.quiz_completion
     if quiz_completion.get(lesson_name):
         return False
@@ -122,10 +133,12 @@ def mark_quiz_completed(lesson_name: str) -> bool:
 
 
 def get_profile_name() -> str:
+    # Return a display-ready name with a safe fallback.
     name = st.session_state.get("student_name", "").strip()
     return name or "User"
 
 
 def navigate(page_key: str) -> None:
+    # Switch active page key and force rerun for immediate navigation.
     st.session_state.active_page = page_key
     st.rerun()

@@ -11,12 +11,14 @@ from app_pages import chatbot, home, lesson_plan, lessons, practice_lab, profile
 
 @dataclass(frozen=True)
 class PageConfig:
+    # Metadata used by the router and sidebar navigation.
     key: str
     title: str
     icon: str
     render: Callable[[], None]
 
 
+# Ordered list defines the main sidebar placement from top to bottom.
 PRIMARY_PAGES = [
     PageConfig("home", "Home", "🏠", home.render),
     PageConfig("lessons", "Lessons", "📚", lessons.render),
@@ -31,6 +33,7 @@ PROFILE_PAGE = PageConfig("profile", "Profile & Progress", "👤", profile_progr
 ALL_PAGES = {page.key: page for page in [*PRIMARY_PAGES, PROFILE_PAGE]}
 
 
+# App-wide state must be initialized before any page reads session values.
 st.set_page_config(page_title="ExcelWars", page_icon="📊", layout="wide")
 init_app_state()
 
@@ -42,6 +45,7 @@ if st.session_state.active_page not in ALL_PAGES:
 
 
 def render_sidebar(active_page: str) -> None:
+    # Render custom navigation so page labels/order are controlled in code.
     st.sidebar.title("ExcelWars")
     st.sidebar.caption(f"Signed in as: {get_profile_name()}")
     st.sidebar.markdown("### Navigation")
@@ -56,6 +60,7 @@ def render_sidebar(active_page: str) -> None:
         ):
             navigate(page.key)
 
+    # Keep profile/progress as an explicit quick-access destination.
     st.sidebar.markdown("---")
     st.sidebar.caption("Quick Access")
 

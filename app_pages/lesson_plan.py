@@ -42,6 +42,7 @@ LESSON_CONTENT = {
 
 
 def render() -> None:
+    # Reference lesson-plan view for teachers/students.
     st.title("🗂 Lesson Plan")
     st.write("Overview and summaries for the three Excel lessons.")
 

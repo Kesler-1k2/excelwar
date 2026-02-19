@@ -18,6 +18,7 @@ CELL_PATTERN = re.compile(r"\b([A-Z]+)([1-9]\d*)\b")
 
 
 def _column_name(index: int) -> str:
+    # Convert zero-based column index to Excel-style label (A, B, ..., AA).
     label = ""
     current = index + 1
 
@@ -29,6 +30,7 @@ def _column_name(index: int) -> str:
 
 
 def _column_index(column_name: str) -> int:
+    # Convert Excel-style label back to zero-based column index.
     index = 0
     for character in column_name:
         index = index * 26 + (ord(character) - 64)
@@ -36,6 +38,7 @@ def _column_index(column_name: str) -> int:
 
 
 def _normalize_cell(value: Any) -> str:
+    # Store every cell as a string to keep editor behavior predictable.
     if value is None:
         return ""
 
@@ -46,6 +49,7 @@ def _normalize_cell(value: Any) -> str:
 
 
 def _build_blank_sheet(rows: int, cols: int) -> pd.DataFrame:
+    # Create a blank spreadsheet with Excel-like column names.
     return pd.DataFrame(
         "",
         index=range(rows),
@@ -54,6 +58,7 @@ def _build_blank_sheet(rows: int, cols: int) -> pd.DataFrame:
 
 
 def _normalize_sheet(dataframe: pd.DataFrame) -> pd.DataFrame:
+    # Normalize imported/edited data into the app's sheet format.
     normalized = dataframe.fillna("").copy()
     normalized.columns = [_column_name(i) for i in range(len(normalized.columns))]
 
@@ -64,6 +69,7 @@ def _normalize_sheet(dataframe: pd.DataFrame) -> pd.DataFrame:
 
 
 def _resize_sheet(dataframe: pd.DataFrame, rows: int, cols: int) -> pd.DataFrame:
+    # Resize while preserving existing values in the top-left region.
     resized = _build_blank_sheet(rows, cols)
 
     max_rows = min(rows, len(dataframe))
@@ -77,6 +83,7 @@ def _resize_sheet(dataframe: pd.DataFrame, rows: int, cols: int) -> pd.DataFrame
 
 
 def _read_uploaded_sheet(uploaded_file) -> pd.DataFrame:
+    # Import CSV/XLSX into normalized internal sheet format.
     extension = Path(uploaded_file.name).suffix.lower()
 
     if extension in {".xlsx", ".xls"}:
@@ -92,6 +99,7 @@ def _read_uploaded_sheet(uploaded_file) -> pd.DataFrame:
 
 
 def _flatten(values):
+    # Flatten nested ranges/collections for aggregate functions.
     for value in values:
         if isinstance(value, (list, tuple, set, np.ndarray, pd.Series)):
             yield from _flatten(value)
@@ -100,6 +108,7 @@ def _flatten(values):
 
 
 def _to_number(value: Any) -> float | None:
+    # Convert compatible values to float; return None when non-numeric.
     if isinstance(value, bool):
         return float(int(value))
 
@@ -124,6 +133,7 @@ def _clean_numeric(value: float | int) -> float | int:
 
 
 def _numeric_values(args) -> list[float]:
+    # Extract only numeric values for SUM/AVERAGE/MIN/MAX/COUNT.
     numbers: list[float] = []
 
     for value in _flatten(args):
@@ -253,6 +263,7 @@ def _evaluate_formula(
     memo: dict[tuple[int, int], Any],
     stack: set[tuple[int, int]],
 ):
+    # Evaluate a formula expression after replacing ranges/cell references.
     range_placeholders: dict[str, str] = {}
 
     def replace_range(match: re.Match[str]) -> str:
@@ -284,6 +295,7 @@ def _evaluate_formula(
         return _to_python_literal(value)
 
     expression = expression.replace("^", "**")
+    # Replace ranges first (A1:B3), then single-cell references.
     expression = RANGE_PATTERN.sub(replace_range, expression)
     expression = CELL_PATTERN.sub(replace_cell, expression)
 
@@ -313,6 +325,7 @@ def _evaluate_cell(
     memo: dict[tuple[int, int], Any],
     stack: set[tuple[int, int]],
 ):
+    # Recursively evaluate one cell and memoize result for efficiency.
     if row_index < 0 or col_index < 0:
         return 0
 
@@ -324,6 +337,7 @@ def _evaluate_cell(
         return memo[cell_key]
 
     if cell_key in stack:
+        # Circular references are surfaced to users as an explicit marker.
         return "#CYCLE!"
 
     stack.add(cell_key)
@@ -341,6 +355,7 @@ def _evaluate_cell(
 
 
 def _calculate_preview(raw_df: pd.DataFrame) -> pd.DataFrame:
+    # Return a fully evaluated copy of the raw sheet.
     preview_df = raw_df.copy()
     memo: dict[tuple[int, int], Any] = {}
 
@@ -352,11 +367,13 @@ def _calculate_preview(raw_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _init_sheet_state() -> None:
+    # Create initial blank sheet on first load.
     if SHEET_STATE_KEY not in st.session_state:
         st.session_state[SHEET_STATE_KEY] = _build_blank_sheet(DEFAULT_ROWS, DEFAULT_COLS)
 
 
 def render() -> None:
+    # Spreadsheet page: edit, calculate, import, resize, and export.
     st.title("🧮 Spreadsheet Lab")
     st.write("Single-grid spreadsheet editor with Excel-style formulas.")
 
@@ -365,6 +382,7 @@ def render() -> None:
     controls_col, new_sheet_col, help_col = st.columns([2, 1, 1], gap="large")
 
     with controls_col:
+        # Import requires explicit button click so upload does not instantly overwrite work.
         uploaded_file = st.file_uploader("Import CSV/XLSX", type=["csv", "xlsx", "xls"])
         if uploaded_file is not None and st.button("Import File", key="sheet_import"):
             try:
@@ -404,6 +422,7 @@ def render() -> None:
     raw_df = st.session_state[SHEET_STATE_KEY]
 
     if mode == "Edit Values/Formulas":
+        # Raw mode keeps formulas visible/editable exactly like typed values.
         edited_df = st.data_editor(
             raw_df,
             num_rows="dynamic",
@@ -413,6 +432,7 @@ def render() -> None:
         st.session_state[SHEET_STATE_KEY] = _normalize_sheet(edited_df)
         preview_df = _calculate_preview(st.session_state[SHEET_STATE_KEY])
     else:
+        # Preview mode shows evaluated values without mutating raw formulas.
         preview_df = _calculate_preview(raw_df)
         st.data_editor(
             preview_df,

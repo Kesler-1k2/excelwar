@@ -5,6 +5,7 @@ from app_core import navigate
 
 
 def render() -> None:
+    # Simple checklist-style practice board for class activities.
     st.title("🧪 Practice Lab")
     st.write("Track your practice tasks and notes.")
 
